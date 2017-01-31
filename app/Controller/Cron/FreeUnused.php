@@ -36,11 +36,23 @@ namespace App\Controller\Cron {
             $this->dispatcher->fire(ServerEvent::SERVER_CHECK_PENDING_JOBS, $event);
 
             if (!$event->hasPendingJobs()) {
-                $instances = $this->manager->findAvailable();
+                $available = $this->manager->findAvailable();
 
-                if ($available = $instances->findAvailable()) {
+                printf("Found %d running instances\n", count($available));
+
+                if (!empty($available)) {
                     for ($i = count($available) - 1; $i >= 0; $i--) {
-                        $instances->terminate($available[$i], $i > 0);
+                        $instance = $available[$i];
+
+                        if ($instance['status'] == 'idle') {
+                            printf("Terminating: %s..", trim($instance['PublicIpAddress']));
+
+                            if ($this->manager->terminate($instance, $i > 0)) {
+                                print "done!\n";
+                            } else {
+                                print "failed (probably has time left)\n";
+                            }
+                        }
                     }
                 }
             }

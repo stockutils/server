@@ -73,7 +73,7 @@ namespace Minute\Instance {
             foreach ($this->getInstancesByType('running') as $reservation) {
                 foreach ($reservation['Instances'] as $instance) {
                     if ($status = $this->queryInstance($instance, ['cmd' => 'status'])) {
-                        if (@$status['status'] == 'available') {
+                        if (preg_match('/^(available|idle)$/', @$status['status'])) {
                             $instances[] = array_merge($instance, $status);
                         }
                     }
@@ -133,12 +133,13 @@ namespace Minute\Instance {
                     return false;
                 } elseif (!$force) {
                     if (((time() - strtotime($launchTime)) % 3600) < (3600 - 10 * 60)) {
+                        //printf ("Time: %s | %s - %s\n", (time() - strtotime($launchTime)) % 3600, date('c'), $launchTime);
                         return false;
                     }
                 }
             }
 
-            $terminated = false;//$this->ec2Client->terminateInstances(['InstanceIds' => [$instance['InstanceId']]]);
+            $terminated = $this->ec2Client->terminateInstances(['InstanceIds' => [$instance['InstanceId']]]);
 
             return $terminated;
         }
